@@ -66,6 +66,84 @@ exports.getStylistWeeklySchedule = async (req, res) => {
     }
 };
 
+// @desc    Get the logged-in stylist's weekly schedule and upcoming appointments
+// @route   GET /api/schedules/stylist/me
+// @access  Private (Stylist)
+exports.getMyScheduleAndAppointments = async (req, res) => {
+    const stylistId = req.user.userId; // From authMiddleware, user must be a stylist
+
+    try {
+        // 1. Get weekly schedule
+        const { rows: weeklySchedules } = await db.query(
+            'SELECT * FROM stylist_schedules WHERE stylist_id = $1 ORDER BY day_of_week, start_time',
+            [stylistId]
+        );
+
+        // 2. Get upcoming appointments (e.g., from today onwards)
+        // Similar to getMyAppointments for customers, but filtered by stylist_id
+        // and joining with services and customer (user) details
+        const today = new Date().toISOString().split('T')[0] + "T00:00:00.000Z";
+        const appointmentsQuery = `
+            SELECT
+                a.appointment_id,
+                a.appointment_start_time,
+                a.appointment_end_time,
+                a.status,
+                a.notes,
+                s.service_id,
+                s.service_name,
+                s.duration_minutes,
+                c.user_id as customer_id,
+                c.first_name as customer_first_name,
+                c.last_name as customer_last_name,
+                c.email as customer_email,
+                c.phone_number as customer_phone_number
+            FROM
+                appointments a
+            JOIN
+                services s ON a.service_id = s.service_id
+            JOIN
+                users c ON a.customer_id = c.user_id
+            WHERE
+                a.stylist_id = $1 AND a.appointment_start_time >= $2 AND a.status NOT IN ('cancelled', 'completed', 'no-show')
+            ORDER BY
+                a.appointment_start_time ASC;
+        `;
+        const { rows: upcomingAppointmentsData } = await db.query(appointmentsQuery, [stylistId, today]);
+
+        const upcomingAppointments = upcomingAppointmentsData.map(row => ({
+            appointment_id: row.appointment_id,
+            appointment_start_time: row.appointment_start_time,
+            appointment_end_time: row.appointment_end_time,
+            status: row.status,
+            notes: row.notes,
+            service: {
+                service_id: row.service_id,
+                name: row.service_name,
+                duration: row.duration_minutes
+            },
+            customer: {
+                customer_id: row.customer_id,
+                first_name: row.customer_first_name,
+                last_name: row.customer_last_name,
+                email: row.customer_email,
+                phone: row.customer_phone_number,
+                name: `${row.customer_first_name} ${row.customer_last_name}`
+            }
+        }));
+
+
+        res.status(200).json({
+            weekly_schedule: weeklySchedules,
+            upcoming_appointments: upcomingAppointments
+        });
+
+    } catch (error) {
+        console.error('Error fetching stylist schedule and appointments:', error);
+        res.status(500).json({ message: 'Server error while fetching data.' });
+    }
+};
+
 
 // @desc    Get available time slots
 // @route   GET /api/availability?serviceId=X&date=YYYY-MM-DD(&stylistId=Y)

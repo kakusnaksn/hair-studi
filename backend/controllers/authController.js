@@ -41,6 +41,11 @@ exports.register = async (req, res) => {
         const { rows } = await db.query(newUserQuery, values);
         const newUser = rows[0];
 
+        // --- NOTIFICATION PLACEHOLDER ---
+        // sendWelcomeEmail(newUser.email, newUser.first_name);
+        // console.log(`Placeholder: Send welcome notification to ${newUser.email}`);
+        // --- END NOTIFICATION PLACEHOLDER ---
+
         res.status(201).json({
             message: 'Customer registered successfully.',
             user: {
@@ -104,11 +109,21 @@ exports.login = async (req, res) => {
 
 // Placeholder for password reset
 exports.requestPasswordReset = async (req, res) => {
-    // Logic for requesting password reset (e.g., send email with token)
+    // const { email } = req.body;
+    // ... (logic to generate reset token and save it) ...
+    // --- NOTIFICATION PLACEHOLDER ---
+    // sendPasswordResetEmail(email, resetToken);
+    // console.log(`Placeholder: Send password reset link to ${email}`);
+    // --- END NOTIFICATION PLACEHOLDER ---
     res.status(501).json({ message: 'Password reset functionality not yet implemented.' });
 };
 
 exports.resetPassword = async (req, res) => {
-    // Logic for resetting password with token
+    // const { token, newPassword } = req.body;
+    // ... (logic to validate token and update password) ...
+    // --- NOTIFICATION PLACEHOLDER ---
+    // sendPasswordResetConfirmationEmail(user.email);
+    // console.log(`Placeholder: Send password reset confirmation to user.`);
+    // --- END NOTIFICATION PLACEHOLDER ---
     res.status(501).json({ message: 'Password reset functionality not yet implemented.' });
 };

@@ -26,9 +26,14 @@ app.use('/api/services', serviceRoutes);
 const scheduleRoutes = require('./routes/scheduleRoutes');
 app.use('/api/schedules', scheduleRoutes);
 
-// Appointment routes  // <-- Add this section
+// Appointment routes
 const appointmentRoutes = require('./routes/appointmentRoutes');
 app.use('/api/appointments', appointmentRoutes);
+
+// Admin routes  // <-- Add this section
+const adminRoutes = require('./routes/adminRoutes');
+app.use('/api/admin', adminRoutes);
+
 
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);

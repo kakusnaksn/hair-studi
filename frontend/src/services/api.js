@@ -39,8 +39,26 @@ export const getAvailableSlots = (serviceId, date, stylistId = null) => {
   return apiClient.get(`/schedules/availability?${queryString}`);
 };
 
-// Placeholder for submitting a booking later
-// export const createAppointment = (bookingData) => apiClient.post('/appointments', bookingData);
+// Appointment calls
+export const createAppointment = (bookingData) => {
+  // Ensure bookingData includes: serviceId, stylistId, appointmentDateTime (ISO string), notes (optional)
+  return apiClient.post('/appointments', bookingData);
+};
+
+export const getMyAppointments = () => {
+  // This backend route GET /api/appointments/my-appointments needs to be created
+  return apiClient.get('/appointments/my-appointments');
+};
+
+// Stylist specific calls
+export const getStylistMySchedule = () => {
+  return apiClient.get('/schedules/stylist/me'); // Endpoint created in previous backend step
+};
+
+// Admin specific calls
+export const createStylistByAdmin = (stylistData) => {
+  return apiClient.post('/admin/stylists', stylistData); // Endpoint from previous backend step
+};
 
 // User profile (example, if/when needed)
 // export const getUserProfile = () => apiClient.get('/users/me');

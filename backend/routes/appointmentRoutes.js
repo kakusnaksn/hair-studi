@@ -13,11 +13,11 @@ router.post(
 );
 
 // Get appointments for the logged-in customer (Example for a future step)
-// router.get(
-//     '/my-appointments',
-//     protect,
-//     authorize('customer'),
-//     appointmentController.getCustomerAppointments
-// );
+router.get(
+    '/my-appointments', // Matches the path used in frontend api.js
+    protect,
+    authorize('customer'), // Only customers can see their own appointments via this route
+    appointmentController.getMyAppointments
+);
 
 module.exports = router;

@@ -36,4 +36,15 @@ router.post(
     scheduleController.addBlockedTimeSlot
 );
 
+
+// --- New Route for Stylist "My Schedule/Appointments" ---
+// Get the logged-in stylist's own weekly schedule and upcoming appointments
+router.get(
+    '/stylist/me', // Specific "me" route for logged-in stylist
+    protect,
+    authorize('stylist'), // Only users with 'stylist' role
+    scheduleController.getMyScheduleAndAppointments
+);
+
+
 module.exports = router;

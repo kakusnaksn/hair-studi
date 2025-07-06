@@ -1,68 +1,351 @@
+/* frontend/src/index.css */
 :root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
-
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
-
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
-}
-a:hover {
-  color: #535bf2;
+  --primary-dark: #1a1a1a; /* Example: Very dark gray / near black */
+  --secondary-dark: #2b2b2b; /* Example: Slightly lighter dark gray for cards/sections */
+  --primary-gold: #daa520; /* Example: Goldenrod / a warm gold */
+  --text-primary: #f0f0f0; /* Example: Light gray for primary text */
+  --text-secondary: #a0a0a0; /* Example: Medium gray for secondary text */
+  --font-sans-serif: 'Roboto', 'Helvetica Neue', Arial, sans-serif; /* Example font stack */
+  --font-headings: 'Playfair Display', serif; /* Example serif for headings, if desired, else use sans-serif */
 }
 
 body {
   margin: 0;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
+  font-family: var(--font-sans-serif);
+  background-color: var(--primary-dark);
+  color: var(--text-primary);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#root {
+  /* Ensure root takes full height if needed, or manage via App.jsx */
   min-height: 100vh;
+  display: flex;
+  flex-direction: column;
 }
 
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
+/* Basic Typography */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-headings); /* Or var(--font-sans-serif) if no separate heading font */
+  color: var(--primary-gold);
+  margin-top: 1.5em;
+  margin-bottom: 0.5em;
 }
 
-button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  background-color: #1a1a1a;
+h1 { font-size: 2.5rem; }
+h2 { font-size: 2rem; }
+h3 { font-size: 1.75rem; }
+
+p {
+  margin-bottom: 1em;
+}
+
+a {
+  color: var(--primary-gold);
+  text-decoration: none;
+  transition: color 0.2s ease-in-out;
+}
+
+a:hover, a:focus {
+  color: #f0c040; /* Lighter gold on hover */
+  text-decoration: underline;
+}
+
+/* Basic Button Styling */
+button, input[type="submit"], input[type="button"] {
+  font-family: var(--font-sans-serif);
+  background-color: var(--primary-gold);
+  color: var(--primary-dark); /* Dark text on gold button */
+  border: none;
+  padding: 10px 20px;
+  border-radius: 4px;
   cursor: pointer;
-  transition: border-color 0.25s;
-}
-button:hover {
-  border-color: #646cff;
-}
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
+  font-size: 1rem;
+  font-weight: bold;
+  transition: background-color 0.2s ease-in-out, transform 0.1s ease;
 }
 
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
-  }
-  a:hover {
-    color: #747bff;
-  }
-  button {
-    background-color: #f9f9f9;
-  }
+button:hover, input[type="submit"]:hover, input[type="button"]:hover {
+  background-color: #f0c040; /* Lighter gold */
+  transform: translateY(-1px);
+}
+
+button:disabled, input[type="submit"]:disabled, input[type="button"]:disabled {
+  background-color: #555;
+  color: #aaa;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Basic Form Input Styling */
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="tel"],
+input[type="date"],
+select,
+textarea {
+  font-family: var(--font-sans-serif);
+  background-color: var(--secondary-dark);
+  color: var(--text-primary);
+  border: 1px solid #444; /* Darker border */
+  padding: 10px;
+  border-radius: 4px;
+  margin-bottom: 10px; /* Add some space below inputs */
+  width: calc(100% - 22px); /* Full width minus padding and border */
+  box-sizing: border-box;
+}
+
+input[type="text"]:focus,
+input[type="email"]:focus,
+input[type="password"]:focus,
+input[type="tel"]:focus,
+input[type="date"]:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--primary-gold);
+  box-shadow: 0 0 0 2px rgba(218, 165, 32, 0.5); /* Gold glow on focus */
+}
+
+label {
+  display: block;
+  margin-bottom: 5px;
+  color: var(--text-secondary); /* Lighter text for labels */
+  font-weight: bold;
+}
+
+/* Basic Card/Section Styling (can be used for dashboard sections, etc.) */
+.card, .section-container {
+  background-color: var(--secondary-dark);
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  margin-bottom: 20px;
+}
+
+/* Navigation specific styling - assuming nav is ul > li > a */
+nav {
+  background-color: var(--secondary-dark); /* Or a slightly different dark shade */
+  padding: 10px 0; /* Removed margin-bottom from here, App.jsx's div provides it */
+  box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+}
+nav ul {
+  list-style-type: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  justify-content: center; /* Or left, right as per design */
+}
+nav ul li {
+  margin: 0 15px;
+}
+nav ul li a {
+  color: var(--text-primary);
+  font-weight: bold;
+  padding: 5px 0;
+  border-bottom: 2px solid transparent;
+}
+nav ul li a:hover,
+nav ul li a.active { /* Assuming react-router-dom NavLink for active class */
+  color: var(--primary-gold);
+  border-bottom-color: var(--primary-gold);
+}
+
+/* Specific styling for logout button if it's inside nav and needs to match link appearance */
+nav button {
+  background: none !important; /* Important to override general button styles */
+  color: var(--text-primary) !important; /* Match nav link color */
+  border: none !important;
+  padding: 5px 0 !important; /* Match nav link padding */
+  font-weight: bold !important;
+  text-decoration: none !important;
+  cursor: pointer !important;
+  transition: color 0.2s ease-in-out !important;
+  transform: none !important; /* Reset transform from general button */
+}
+nav button:hover {
+  background: none !important;
+  color: var(--primary-gold) !important;
+  text-decoration: underline !important;
+}
+
+/* React Big Calendar Dark Theme Overrides */
+.rbc-calendar {
+  background-color: var(--secondary-dark); /* Calendar background */
+  color: var(--text-primary);
+  border-radius: 8px; /* Match section-container */
+}
+
+.rbc-toolbar {
+  background-color: var(--secondary-dark); /* Toolbar background */
+  padding: 10px;
+  border-bottom: 1px solid #444; /* Separator line */
+  margin-bottom: 10px; /* Space below toolbar */
+}
+
+.rbc-toolbar button {
+  color: var(--primary-gold); /* Gold for toolbar buttons */
+  background-color: transparent;
+  border: 1px solid var(--primary-gold);
+  padding: 5px 10px;
+  margin: 0 3px; /* Spacing between buttons */
+}
+
+.rbc-toolbar button:hover,
+.rbc-toolbar button:focus,
+.rbc-toolbar button.rbc-active {
+  background-color: var(--primary-gold);
+  color: var(--primary-dark); /* Dark text on active/hover gold button */
+  border-color: var(--primary-gold);
+}
+
+.rbc-toolbar label { /* Current date display in toolbar */
+  color: var(--text-primary);
+  font-weight: bold;
+  font-size: 1.2em;
+}
+
+.rbc-header { /* Day/Week headers (Mon, Tue, etc.) */
+  background-color: #333; /* Slightly different dark for headers */
+  color: var(--text-secondary);
+  border-bottom: 1px solid #444;
+  padding: 8px 0;
+  text-align: center;
+}
+.rbc-header + .rbc-header { /* Border between headers */
+  border-left: 1px solid #444;
+}
+
+
+.rbc-month-view, .rbc-time-view, .rbc-agenda-view {
+  border: 1px solid #444; /* Border around calendar content area */
+}
+
+.rbc-day-slot .rbc-time-slot { /* Time slots in day/week view */
+  border-top: 1px dotted #555; /* Lighter dotted lines for time slots */
+}
+
+.rbc-time-gutter .rbc-timeslot-group .rbc-time-slot { /* Time labels (9am, 10am) */
+    border-top: none; /* Remove default top border if not needed */
+}
+
+
+.rbc-event {
+  /* Default event style is set by eventStyleGetter, this is a fallback or general container */
+  padding: 2px 5px;
+  border-radius: 5px; /* Ensure this matches eventStyleGetter if it doesn't override all */
+}
+
+.rbc-event-label { /* Event title text inside event */
+  font-size: 0.85em;
+  font-weight: normal; /* Override default bold if eventStyleGetter handles it */
+}
+
+.rbc-off-range-bg { /* Background for days not in the current month */
+  background-color: #222; /* Darker for out-of-range days */
+}
+
+.rbc-today { /* Highlight for today's date */
+  background-color: #383830; /* Slightly different background for today */
+}
+
+.rbc-current-time-indicator { /* The line indicating current time */
+  background-color: var(--primary-gold);
+  height: 2px; /* Make it more visible */
+}
+.rbc-current-time-indicator::before { /* Optional: add a dot or something */
+    content: '';
+    position: absolute;
+    left: -4px; /* Adjust as needed */
+    top: -3px; /* Adjust as needed */
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: var(--primary-gold);
+}
+
+/* Styles for ServiceCard hover effect and button-like Links */
+.service-card-hover {
+  transition: transform 0.2s ease-out, box-shadow 0.2s ease-out;
+}
+
+.service-card-hover:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5); /* Darker, larger shadow on hover */
+}
+
+/* Style for <Link> components to look like buttons */
+.button-as-link {
+  display: inline-block; /* Or block if it should take full width */
+  font-family: var(--font-sans-serif);
+  background-color: var(--primary-gold);
+  color: var(--primary-dark) !important; /* Important to override link color if needed */
+  border: none;
+  padding: 10px 20px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: bold;
+  text-align: center;
+  text-decoration: none !important; /* Remove underline from link */
+  transition: background-color 0.2s ease-in-out, transform 0.1s ease;
+}
+
+.button-as-link:hover {
+  background-color: #f0c040; /* Lighter gold */
+  color: var(--primary-dark) !important;
+  transform: translateY(-1px);
+  text-decoration: none !important;
+}
+
+/* Styles for BookingPage slot buttons */
+.slot-button, .active-slot-button {
+  padding: 10px 15px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: bold;
+  transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out, border-color 0.2s ease-in-out;
+  margin: 5px; /* Ensure some margin for wrapping */
+}
+
+.slot-button {
+  background-color: var(--secondary-dark);
+  color: var(--text-primary);
+  border: 1px solid #555;
+}
+
+.slot-button:hover {
+  background-color: #444; /* Slightly lighter on hover */
+  border-color: #777;
+}
+
+.active-slot-button {
+  background-color: var(--primary-gold);
+  color: var(--primary-dark);
+  border: 1px solid var(--primary-gold);
+}
+
+/* Ensure nav logout button looks like a link */
+.nav-logout-button {
+  background: none !important;
+  color: var(--text-primary) !important; /* Match nav link color */
+  border: none !important;
+  padding: 0 !important; /* Remove padding if it's too much */
+  margin: 0 !important; /* Remove margin if it's too much */
+  font-weight: bold !important; /* Match nav link font weight */
+  text-decoration: none !important;
+  cursor: pointer !important;
+  transition: color 0.2s ease-in-out !important;
+  font-family: var(--font-sans-serif) !important; /* Ensure consistent font */
+  font-size: inherit !important; /* Inherit font size from parent (li) */
+}
+
+.nav-logout-button:hover {
+  background: none !important;
+  color: var(--primary-gold) !important;
+  text-decoration: underline !important;
 }

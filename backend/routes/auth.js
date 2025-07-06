@@ -17,10 +17,10 @@ router.post('/login', authController.login);
 // @access  Public
 router.post('/request-password-reset', authController.requestPasswordReset);
 
-// @route   POST api/auth/reset-password/:token
-// @desc    Reset password using a token
+// @route   POST api/auth/reset-password
+// @desc    Reset password using a token (token in body)
 // @access  Public
-router.post('/reset-password/:token', authController.resetPassword);
+router.post('/reset-password', authController.resetPassword);
 
 
 module.exports = router;

@@ -8,7 +8,9 @@ import ServicesPage from './pages/ServicesPage';
 import BookingPage from './pages/BookingPage';
 import MyAppointmentsPage from './pages/MyAppointmentsPage';
 import StylistDashboardPage from './pages/StylistDashboardPage';
-import AdminDashboardPage from './pages/AdminDashboardPage'; // <-- Import AdminDashboardPage
+import AdminDashboardPage from './pages/AdminDashboardPage';
+import RequestPasswordResetPage from './pages/RequestPasswordResetPage'; // <-- Import
+import ResetPasswordPage from './pages/ResetPasswordPage';             // <-- Import
 
 // Helper to get user from local storage
 const getCurrentUser = () => {
@@ -22,17 +24,15 @@ function ProtectedRoute({ children, allowedRoles }) {
   const currentUser = getCurrentUser();
 
   if (!token || !currentUser) {
-    // Not logged in
     return <Navigate to="/login" />;
   }
 
   if (allowedRoles && !allowedRoles.includes(currentUser.role)) {
-    // Logged in but not authorized for this route
-    alert("You are not authorized to view this page."); // Simple feedback
+    alert("You are not authorized to view this page.");
     return <Navigate to="/" />;
   }
 
-  return children; // Authorized
+  return children;
 }
 
 // Navigation Component
@@ -46,8 +46,8 @@ function Navigation() {
   };
 
   return (
-    <nav style={{ backgroundColor: '#f0f0f0', padding: '10px', marginBottom: '20px' }}>
-      <ul style={{ listStyleType: 'none', margin: 0, padding: 0, display: 'flex', gap: '15px' }}>
+    <nav style={{ backgroundColor: 'var(--secondary-dark)', padding: '10px 0', marginBottom: '20px', boxShadow: '0 2px 4px rgba(0,0,0,0.3)' }}>
+      <ul style={{ listStyleType: 'none', margin: 0, padding: '0 20px', display: 'flex', justifyContent: 'center', gap: '20px', alignItems: 'center' }}>
         <li><Link to="/">Home</Link></li>
         <li><Link to="/services">Services</Link></li>
 
@@ -63,18 +63,14 @@ function Navigation() {
         )}
 
         {currentUser && currentUser.role === 'admin' && (
-           <li><Link to="/admin/dashboard">Admin Dashboard</Link></li> // Ensure this is present
+           <li><Link to="/admin/dashboard">Admin Dashboard</Link></li>
         )}
 
         {currentUser ? (
           <>
             <li><Link to="/profile">Profile</Link></li>
             <li>
-              <button onClick={handleLogout} style={{
-                background: 'none', border: 'none', padding: 0, margin:0,
-                color: 'blue', textDecoration: 'underline', cursor: 'pointer',
-                fontFamily: 'inherit', fontSize: 'inherit'
-              }}>
+              <button onClick={handleLogout} className="nav-logout-button">
                 Logout
               </button>
             </li>
@@ -89,6 +85,7 @@ function Navigation() {
     </nav>
   );
 }
+// Add CSS for nav-logout-button in index.css if it's not covered by global nav button styles
 
 // Main App Component
 function App() {
@@ -100,8 +97,10 @@ function App() {
           <Route path="/" element={<HomePage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/login" element={<LoginPage />} />
-          <Route path="/services" element={<ServicesPage />} />
+          <Route path="/request-password-reset" element={<RequestPasswordResetPage />} /> {/* <-- New Route */}
+          <Route path="/reset-password" element={<ResetPasswordPage />} />               {/* <-- New Route (token in query) */}
 
+          <Route path="/services" element={<ServicesPage />} />
           <Route
             path="/book-appointment"
             element={<ProtectedRoute allowedRoles={['customer']}><BookingPage /></ProtectedRoute>}
@@ -115,7 +114,7 @@ function App() {
             element={<ProtectedRoute allowedRoles={['stylist']}><StylistDashboardPage /></ProtectedRoute>}
           />
           <Route
-            path="/admin/dashboard" // <-- Add Admin Dashboard Route
+            path="/admin/dashboard"
             element={<ProtectedRoute allowedRoles={['admin']}><AdminDashboardPage /></ProtectedRoute>}
           />
           <Route

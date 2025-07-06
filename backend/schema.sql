@@ -82,3 +82,16 @@ CREATE INDEX idx_appointments_start_time ON appointments(appointment_start_time)
 CREATE INDEX idx_stylist_schedules_stylist_id ON stylist_schedules(stylist_id);
 CREATE INDEX idx_blocked_time_slots_stylist_id ON blocked_time_slots(stylist_id);
 CREATE INDEX idx_blocked_time_slots_start_end_time ON blocked_time_slots(start_time, end_time);
+
+-- Password Reset Tokens Table
+CREATE TABLE password_reset_tokens (
+    id SERIAL PRIMARY KEY,
+    user_id INT NOT NULL,
+    token_hash VARCHAR(255) NOT NULL UNIQUE, -- Store a hash of the reset token
+    expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
+);
+
+CREATE INDEX idx_password_reset_tokens_user_id ON password_reset_tokens(user_id);
+CREATE INDEX idx_password_reset_tokens_token_hash ON password_reset_tokens(token_hash);

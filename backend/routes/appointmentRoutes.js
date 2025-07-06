@@ -20,4 +20,12 @@ router.get(
     appointmentController.getMyAppointments
 );
 
+// Update an appointment's status
+router.patch( // Using PATCH as it's a partial update
+    '/:appointmentId/status',
+    protect,
+    authorize('stylist', 'admin', 'customer'), // Customer role added for cancellation
+    appointmentController.updateAppointmentStatus
+);
+
 module.exports = router;

@@ -9,24 +9,19 @@ const { getServiceById } = require('./serviceController');
 exports.setStylistWeeklySchedule = async (req, res) => {
     const { stylistId } = req.params;
     const { schedules } = req.body; // Expects an array of schedule objects
-    // schedules: [{ day_of_week: 1, start_time: '09:00', end_time: '17:00', is_available: true }, ...]
 
     if (!schedules || !Array.isArray(schedules)) {
         return res.status(400).json({ message: 'Schedules array is required.' });
     }
 
-    // Basic validation for schedule entries
     for (const sched of schedules) {
         if (sched.day_of_week === undefined || sched.start_time === undefined || sched.end_time === undefined) {
             return res.status(400).json({ message: 'Each schedule entry must include day_of_week, start_time, and end_time.' });
         }
-        // Add more validation for time format, day_of_week range, etc.
     }
 
     try {
-        // First, clear existing schedule for this stylist to avoid conflicts or use UPSERT
         await db.query('DELETE FROM stylist_schedules WHERE stylist_id = $1', [stylistId]);
-
         const results = [];
         for (const sched of schedules) {
             const { day_of_week, start_time, end_time, is_available = true } = sched;
@@ -38,7 +33,6 @@ exports.setStylistWeeklySchedule = async (req, res) => {
             const { rows } = await db.query(query, [stylistId, day_of_week, start_time, end_time, is_available]);
             results.push(rows[0]);
         }
-
         res.status(201).json({
             message: `Schedule updated successfully for stylist ${stylistId}.`,
             schedules: results,
@@ -66,33 +60,33 @@ exports.getStylistWeeklySchedule = async (req, res) => {
     }
 };
 
-// @desc    Get the logged-in stylist's weekly schedule and upcoming appointments
-// @route   GET /api/schedules/stylist/me
+// @desc    Get the logged-in stylist's weekly schedule and appointments within a date range
+// @route   GET /api/schedules/stylist/me?startDate=YYYY-MM-DD&endDate=YYYY-MM-DD
 // @access  Private (Stylist)
 exports.getMyScheduleAndAppointments = async (req, res) => {
-    const stylistId = req.user.userId; // From authMiddleware, user must be a stylist
+    const stylistId = req.user.userId; // From authMiddleware
+    const { startDate, endDate } = req.query; // Expecting YYYY-MM-DD format
 
     try {
-        // 1. Get weekly schedule
+        // 1. Get weekly schedule (remains the same, as it's general)
         const { rows: weeklySchedules } = await db.query(
             'SELECT * FROM stylist_schedules WHERE stylist_id = $1 ORDER BY day_of_week, start_time',
             [stylistId]
         );
 
-        // 2. Get upcoming appointments (e.g., from today onwards)
-        // Similar to getMyAppointments for customers, but filtered by stylist_id
-        // and joining with services and customer (user) details
-        const today = new Date().toISOString().split('T')[0] + "T00:00:00.000Z";
-        const appointmentsQuery = `
+        // 2. Get appointments within the specified date range or a default range
+        let appointmentsQuery = `
             SELECT
                 a.appointment_id,
                 a.appointment_start_time,
                 a.appointment_end_time,
                 a.status,
-                a.notes,
+                a.notes, -- Ensure customer notes are fetched
                 s.service_id,
                 s.service_name,
+                s.description as service_description,
                 s.duration_minutes,
+                s.price as service_price,
                 c.user_id as customer_id,
                 c.first_name as customer_first_name,
                 c.last_name as customer_last_name,
@@ -105,37 +99,68 @@ exports.getMyScheduleAndAppointments = async (req, res) => {
             JOIN
                 users c ON a.customer_id = c.user_id
             WHERE
-                a.stylist_id = $1 AND a.appointment_start_time >= $2 AND a.status NOT IN ('cancelled', 'completed', 'no-show')
-            ORDER BY
-                a.appointment_start_time ASC;
+                a.stylist_id = $1
+                AND a.status NOT IN ('cancelled') -- Maybe also exclude 'completed' depending on calendar needs
         `;
-        const { rows: upcomingAppointmentsData } = await db.query(appointmentsQuery, [stylistId, today]);
 
-        const upcomingAppointments = upcomingAppointmentsData.map(row => ({
-            appointment_id: row.appointment_id,
-            appointment_start_time: row.appointment_start_time,
-            appointment_end_time: row.appointment_end_time,
+        const queryParams = [stylistId];
+
+        if (startDate && endDate) {
+            const rangeStart = new Date(startDate + "T00:00:00.000Z");
+            const rangeEnd = new Date(endDate + "T23:59:59.999Z");
+
+            if (isNaN(rangeStart.getTime()) || isNaN(rangeEnd.getTime())) {
+                return res.status(400).json({ message: 'Invalid startDate or endDate format. Use YYYY-MM-DD.' });
+            }
+
+            appointmentsQuery += ` AND a.appointment_start_time >= $${queryParams.length + 1} AND a.appointment_start_time <= $${queryParams.length + 2}`;
+            queryParams.push(rangeStart.toISOString());
+            queryParams.push(rangeEnd.toISOString());
+        } else {
+            const today = new Date();
+            today.setUTCHours(0,0,0,0);
+            const futureLimit = new Date(today);
+            futureLimit.setDate(today.getDate() + 30);
+
+            appointmentsQuery += ` AND a.appointment_start_time >= $${queryParams.length + 1} AND a.appointment_start_time <= $${queryParams.length + 2}`;
+            queryParams.push(today.toISOString());
+            queryParams.push(futureLimit.toISOString());
+        }
+
+        appointmentsQuery += ` ORDER BY a.appointment_start_time ASC;`;
+
+        const { rows: appointmentData } = await db.query(appointmentsQuery, queryParams);
+
+        const appointments = appointmentData.map(row => ({
+            id: row.appointment_id,
+            title: `${row.service_name} - ${row.customer_first_name} ${row.customer_last_name}`,
+            start: new Date(row.appointment_start_time),
+            end: new Date(row.appointment_end_time),
+            allDay: false,
             status: row.status,
-            notes: row.notes,
-            service: {
-                service_id: row.service_id,
-                name: row.service_name,
-                duration: row.duration_minutes
-            },
-            customer: {
-                customer_id: row.customer_id,
-                first_name: row.customer_first_name,
-                last_name: row.customer_last_name,
-                email: row.customer_email,
-                phone: row.customer_phone_number,
-                name: `${row.customer_first_name} ${row.customer_last_name}`
+            resource: {
+                notes: row.notes,
+                service: {
+                    id: row.service_id,
+                    name: row.service_name,
+                    description: row.service_description,
+                    duration: row.duration_minutes,
+                    price: row.service_price
+                },
+                customer: {
+                    id: row.customer_id,
+                    firstName: row.customer_first_name,
+                    lastName: row.customer_last_name,
+                    email: row.customer_email,
+                    phone: row.customer_phone_number,
+                    fullName: `${row.customer_first_name} ${row.customer_last_name}`
+                }
             }
         }));
 
-
         res.status(200).json({
             weekly_schedule: weeklySchedules,
-            upcoming_appointments: upcomingAppointments
+            appointments: appointments
         });
 
     } catch (error) {
@@ -143,7 +168,6 @@ exports.getMyScheduleAndAppointments = async (req, res) => {
         res.status(500).json({ message: 'Server error while fetching data.' });
     }
 };
-
 
 // @desc    Get available time slots
 // @route   GET /api/availability?serviceId=X&date=YYYY-MM-DD(&stylistId=Y)
@@ -156,24 +180,20 @@ exports.getAvailableSlots = async (req, res) => {
     }
 
     try {
-        // 1. Get Service Details (especially duration)
-        const service = await getServiceById(serviceId); // Use imported function
+        const service = await getServiceById(serviceId);
         if (!service) {
             return res.status(404).json({ message: 'Service not found.' });
         }
-        const serviceDuration = service.duration_minutes; // in minutes
+        const serviceDuration = service.duration_minutes;
 
-        // 2. Determine Target Stylists
         let targetStylistIds = [];
         if (preferredStylistId) {
-            // Check if preferred stylist exists and can perform the service (future enhancement)
             const { rows: stylistCheck } = await db.query('SELECT user_id FROM users WHERE user_id = $1 AND role_id = (SELECT role_id FROM user_roles WHERE role_name = $2)', [preferredStylistId, 'stylist']);
             if (stylistCheck.length === 0) {
                 return res.status(404).json({ message: 'Preferred stylist not found or is not a stylist.' });
             }
             targetStylistIds.push(preferredStylistId);
         } else {
-            // Find all active stylists (future: who can perform this service)
             const { rows: allStylists } = await db.query('SELECT user_id FROM users WHERE role_id = (SELECT role_id FROM user_roles WHERE role_name = $2)', ['stylist']);
             targetStylistIds = allStylists.map(s => s.user_id);
         }
@@ -182,99 +202,77 @@ exports.getAvailableSlots = async (req, res) => {
             return res.status(404).json({ message: 'No stylists available.' });
         }
 
-        const requestedDate = new Date(date); // Format: YYYY-MM-DD
-        const dayOfWeek = requestedDate.getUTCDay(); // Sunday = 0, Monday = 1, ... (UTC to align with DB if times are naive)
+        const requestedDate = new Date(date);
+        const dayOfWeek = requestedDate.getUTCDay();
 
         const availableSlotsByStylist = {};
 
         for (const stylistId of targetStylistIds) {
-            // 3. Get Stylist's General Schedule for that day_of_week
             const { rows: weeklySchedules } = await db.query(
                 'SELECT start_time, end_time FROM stylist_schedules WHERE stylist_id = $1 AND day_of_week = $2 AND is_available = TRUE',
                 [stylistId, dayOfWeek]
             );
 
-            if (weeklySchedules.length === 0) continue; // Stylist doesn't work on this day
+            if (weeklySchedules.length === 0) continue;
 
-            // Assume studio operates from 00:00 to 23:59 for now, can be refined with studio hours
-            // For each work block for the stylist on that day
             for (const schedule of weeklySchedules) {
-                let stylistWorkStart = new Date(`${date}T${schedule.start_time}Z`); // Assume times are UTC
+                let stylistWorkStart = new Date(`${date}T${schedule.start_time}Z`);
                 let stylistWorkEnd = new Date(`${date}T${schedule.end_time}Z`);
 
-                // 4. Get Existing Appointments for the stylist on that date
                 const { rows: appointments } = await db.query(
                     `SELECT appointment_start_time, appointment_end_time FROM appointments
                      WHERE stylist_id = $1 AND appointment_start_time >= $2 AND appointment_start_time < $3
                      AND status != 'cancelled'`,
-                    [stylistId, `${date}T00:00:00Z`, `${date}T23:59:59Z`] // Check full day
+                    [stylistId, `${date}T00:00:00Z`, `${date}T23:59:59Z`]
                 );
 
-                // 5. Get Blocked Time Slots for the stylist on that date
                 const { rows: blockedSlots } = await db.query(
                     `SELECT start_time, end_time FROM blocked_time_slots
                      WHERE (stylist_id = $1 OR stylist_id IS NULL) AND start_time < $2 AND end_time > $3`,
-                    [stylistId, new Date(`${date}T23:59:59Z`), new Date(`${date}T00:00:00Z`)] // Check overlaps with the day
+                    [stylistId, new Date(`${date}T23:59:59Z`), new Date(`${date}T00:00:00Z`)]
                 );
 
-                // Combine appointments and blocked slots into a single list of busy periods
                 const busyPeriods = [];
                 appointments.forEach(app => busyPeriods.push({ start: new Date(app.appointment_start_time), end: new Date(app.appointment_end_time) }));
                 blockedSlots.forEach(block => busyPeriods.push({ start: new Date(block.start_time), end: new Date(block.end_time) }));
                 busyPeriods.sort((a, b) => a.start - b.start);
 
-
-                // 6. Calculate Available Slots (simplified example: check every 30 mins or serviceDuration step)
-                // This logic needs to be robust: iterate from stylistWorkStart to stylistWorkEnd
                 let potentialSlotStart = new Date(stylistWorkStart);
                 const slotsForStylist = [];
 
                 while (potentialSlotStart < stylistWorkEnd) {
                     let potentialSlotEnd = new Date(potentialSlotStart.getTime() + serviceDuration * 60000);
-
-                    if (potentialSlotEnd > stylistWorkEnd) break; // Slot exceeds working hours
+                    if (potentialSlotEnd > stylistWorkEnd) break;
 
                     let isSlotAvailable = true;
                     for (const busyPeriod of busyPeriods) {
-                        // Check for overlap: (StartA < EndB) and (EndA > StartB)
                         if (potentialSlotStart < busyPeriod.end && potentialSlotEnd > busyPeriod.start) {
                             isSlotAvailable = false;
                             break;
                         }
                     }
-
                     if (isSlotAvailable) {
-                        slotsForStylist.push(potentialSlotStart.toISOString().substr(11, 5)); // HH:MM format
+                        slotsForStylist.push(potentialSlotStart.toISOString().substr(11, 5));
                     }
-
-                    // Increment potentialSlotStart (e.g., by 15-minute intervals or service duration)
-                    // For this example, let's use 15 min intervals to find more granular slots
                     potentialSlotStart.setTime(potentialSlotStart.getTime() + 15 * 60000);
                 }
                 if(slotsForStylist.length > 0) {
                     if (!availableSlotsByStylist[stylistId]) availableSlotsByStylist[stylistId] = [];
                     availableSlotsByStylist[stylistId].push(...slotsForStylist);
-                    // Remove duplicates if any due to interval logic
                     availableSlotsByStylist[stylistId] = [...new Set(availableSlotsByStylist[stylistId])].sort();
                 }
             }
         }
-        // For "any stylist", we could try to merge slots or just return per stylist
-        // For now, returning slots grouped by stylist if no preferred stylist, or just for the one.
         if (Object.keys(availableSlotsByStylist).length === 0) {
             return res.status(200).json({ message: 'No available slots found for the selected criteria.', slots: [] });
         }
 
-        // If a preferred stylist was given, return only their slots
         if (preferredStylistId && availableSlotsByStylist[preferredStylistId]) {
              res.status(200).json({ stylistId: preferredStylistId, slots: availableSlotsByStylist[preferredStylistId] });
         } else if (preferredStylistId) {
              res.status(200).json({ message: 'No available slots found for the preferred stylist.', slots: [] });
         }
          else {
-            // If "any stylist", return all found slots, perhaps merge them or pick the one with most slots
-            // For now, just return all, client can pick. Or, a more complex merging logic can be added.
-            // Let's flatten for "any stylist" to a single list of unique time slots if multiple stylists offer it.
             let allPossibleSlots = new Set();
             for(const stylist in availableSlotsByStylist){
                 availableSlotsByStylist[stylist].forEach(slot => allPossibleSlots.add(slot));
@@ -291,7 +289,6 @@ exports.getAvailableSlots = async (req, res) => {
 // Placeholder for managing blocked time slots
 exports.addBlockedTimeSlot = async (req, res) => {
     const { stylist_id, start_time, end_time, reason } = req.body;
-    // stylist_id can be null for studio-wide blocks
     if (!start_time || !end_time) {
         return res.status(400).json({ message: 'Start time and end time are required.' });
     }
